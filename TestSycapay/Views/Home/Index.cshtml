@@ -1,0 +1,91 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+    <div class="container">
+        <div class="form-test">
+            <fieldset>
+                <legend>Formulaire de Paiement avec Sycapay</legend>
+                <div class="form-group">
+                    <label for="amount" class="col-lg-2 control-label">Montant de la transaction</label>
+                    <div class="col-lg-10">
+                        <input type="number" class="form-control" id="amount" name="amount" placeholder="Montant de la transaction">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-lg-10 col-lg-offset-2">
+                        <button type="reset" class="btn btn-default">Annuler</button>
+                        <button id="sub" class="btn btn-primary">Passer au paiement</button>
+                    </div>
+                </div>
+            </fieldset>
+            <div style="position: absolute; top: -999999px; right: -999999px;" id="rep"></div>
+        </div>
+    </div><!-- /.container -->
+@section scripts{
+    <script>
+      $(document).ready(function () {
+        $("#sub").click(function () {
+          var mt = $("input[name=amount]").val();
+
+          $(this).attr("disabled", true);
+          $(this).text("Patientez svp ...");
+
+          $.post("http://localhost:60316/home/gettoken", { amount: mt})
+              .done(function (data, text, jqxhr) {
+                var data = $.parseJSON(jqxhr.responseText);
+                if(data.success){
+                  console.log(data);
+
+                  var blocConfirm = '<div class="row">';
+                  blocConfirm += '<div class="col-md-12">';
+                  blocConfirm += '<form action="https://secure.sycapay.net/checkresponsive" method="post" name="sycapayment" id="sycapayment" class="sycapayment">';
+                  blocConfirm += '<input type="hidden" name="token" value="'+data.txt+'">';
+                  blocConfirm += '<input type="hidden" id="amount" name="amount" value="'+mt+'">';
+                  blocConfirm += '<input type="hidden" name="currency" value="XOF">';
+                  blocConfirm += '<input type="hidden" name="urls" value="http://digitalsenegal.com/_preview/sycapay/success.php">';
+                  blocConfirm += '<input type="hidden" name="urlc" value="http://digitalsenegal.com/_preview/sycapay/cancel.php">';
+                  blocConfirm += '<input type="hidden" id="commande" name="commande" value="COMMANDE TEST">';
+                  blocConfirm += '<input type="hidden" name="merchandid" value="C_5A95112715F3E">';
+                  blocConfirm += '<input type="hidden" name="typpaie" id="typpaie" value="payement">';
+                  blocConfirm += '<div class="col-sm-12 btn-zone" style="text-align: center">';
+                  blocConfirm += '<button class="btn btn-lg btn-register btn_submit" type="button" id="btn_valider">Confirmer</button>';
+                  blocConfirm += '</div>';
+                  blocConfirm += '</div>';
+                  blocConfirm += '</form>';
+                  blocConfirm += '</div>';
+                  blocConfirm += '</div>';
+
+                  $("#rep").html(blocConfirm);
+                }
+              })
+              .fail(function(jqxhr){
+                $("button.ladda-button").prop('disabled', false);
+                $("button.ladda-button").removeClass('chargement');
+                console.log(jqxhr);
+              })
+              .always(function(){
+
+                var count=2;
+                var counter=setInterval(timer, 1000);
+
+                function timer()
+                {
+                  count=count-1;
+                  if (count <= 0)
+                  {
+                    $('#sycapayment').submit();
+                    clearInterval(counter);
+
+                  }
+
+                }
+
+                $("button.ladda-button").prop('disabled', false);
+                $("button.ladda-button").removeClass('chargement');
+              })
+        })
+      });
+    </script>
+}
